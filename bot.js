@@ -7,13 +7,14 @@ const PORT = process.env.PORT || 3000;
 
 let latestQR = null;
 let isReady = false;
-let lastPingTime = Date.now();
 
 // WhatsApp client
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: true,
+        headless: 'new',
+        // Use the system Chromium installed by the Dockerfile
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -151,7 +152,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌐 Web server running on port ${PORT}`);
 });
 
