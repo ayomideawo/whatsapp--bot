@@ -9,5 +9,8 @@
     "whatsapp-web.js": "^1.23.0",
     "qrcode-terminal": "^0.12.0",
     "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
