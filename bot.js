@@ -33,7 +33,10 @@ const jokes = [
     "Why do Java devs wear glasses? They don't C# 👓",
     "I'd tell you a UDP joke, but you might not get it 📡",
     "There are 10 types of people: those who get binary, and those who don't 🔢",
-    "A SQL query walks into a bar: 'Can I join you?' 🍻"
+    "A SQL query walks into a bar: 'Can I join you?' 🍻",
+    "Recursion: see Recursion 🔁",
+    "Why was the function sad? It didn't get called 📞",
+    "!false — it's funny because it's true 😂"
 ];
 
 const quotes = [
@@ -41,7 +44,8 @@ const quotes = [
     "Code is like humor. When you have to explain it, it's bad. — Cory House",
     "First, solve the problem. Then write the code. — John Johnson",
     "Simplicity is the soul of efficiency. — Austin Freeman",
-    "Premature optimization is the root of all evil. — Donald Knuth"
+    "Premature optimization is the root of all evil. — Donald Knuth",
+    "Any fool can write code a computer understands. Good programmers write code humans understand. — Martin Fowler"
 ];
 
 const facts = [
@@ -50,28 +54,43 @@ const facts = [
     "A day on Venus is longer than a year on Venus 🪐",
     "Bananas are berries, strawberries aren't 🍌",
     "Sharks existed before trees 🦈",
-    "Water makes up ~60% of the human body 💧"
+    "Water makes up ~60% of the human body 💧",
+    "The shortest war lasted 38 minutes ⚔️",
+    "Butterflies taste with their feet 🦋",
+    "The Eiffel Tower grows ~15cm in summer 🗼",
+    "A group of flamingos is called a flamboyance 🦩"
 ];
 
 const riddles = [
     { q: "What has keys but can't open locks?", a: "A piano" },
     { q: "What gets wetter the more it dries?", a: "A towel" },
     { q: "What has a head and tail but no body?", a: "A coin" },
-    { q: "I speak without a mouth. What am I?", a: "An echo" }
+    { q: "I speak without a mouth. What am I?", a: "An echo" },
+    { q: "The more you take, the more you leave behind. What am I?", a: "Footsteps" }
 ];
 
 const truthQuestions = [
     "What's your most embarrassing moment?",
     "Who's your secret crush?",
     "What's the biggest lie you've told?",
-    "What's the last thing you searched on your phone?"
+    "What's the last thing you searched on your phone?",
+    "What's your biggest fear?"
 ];
 
 const dares = [
     "Send the last photo in your gallery.",
     "Type your name with your eyes closed.",
     "Voice note yourself singing.",
-    "Send an emoji for every letter of your name."
+    "Send an emoji for every letter of your name.",
+    "Text your crush 'hey' and screenshot the reply."
+];
+
+const wouldYouRather = [
+    "Would you rather: Fight 1 horse-sized duck OR 100 duck-sized horses?",
+    "Would you rather: Always be 10 min late OR 20 min early?",
+    "Would you rather: Have unlimited money OR unlimited time?",
+    "Would you rather: Never use social media OR never watch movies again?",
+    "Would you rather: Read minds OR be invisible?"
 ];
 
 const rand = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -79,7 +98,7 @@ const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 // ===== MENU =====
 const MENU = `
 ╔══════════════════════╗
-   🤖 *XITEXE BOT*  
+   🤖 *XITEXE BOT*
 ╚══════════════════════╝
 
 *🎮 FUN*
@@ -94,6 +113,7 @@ const MENU = `
 .riddle — random riddle
 .truth — truth question
 .dare — dare challenge
+.wouldyourather — random dilemma
 
 *🛠️ UTILITY*
 .time — current time
@@ -107,6 +127,7 @@ const MENU = `
 .len hello — character count
 .uuid — generate UUID
 .id — your WhatsApp ID
+.chatid — current chat ID
 
 *👥 GROUP*
 .groupinfo — group stats
@@ -158,44 +179,44 @@ client.on('message', async (msg) => {
 
     try {
         // ===== MENU =====
-        if (cmd === '.menu' || cmd === '.help' || cmd === '.commands' ||
-            cmd === '!menu' || cmd === '!help' || cmd === '!commands') {
+        if (['.menu', '.help', '.commands', '!menu', '!help', '!commands'].includes(cmd)) {
             return msg.reply(MENU);
         }
 
-        if (cmd === '.about' || cmd === '!about') {
+        if (['.about', '!about'].includes(cmd)) {
             return msg.reply('🤖 XITEXE BOT\nVersion: 1.0\nBuilt with whatsapp-web.js\nType .menu for commands');
         }
 
         // ===== FUN =====
-        if (cmd === '.ping' || cmd === '!ping') return msg.reply('pong 🏓');
-        if (cmd === '.hi' || cmd === '.hello' || cmd === '!hi') return msg.reply('Hello 👋');
-        if (cmd === '.joke' || cmd === '!joke') return msg.reply('😄 ' + rand(jokes));
-        if (cmd === '.quote' || cmd === '!quote') return msg.reply('💬 ' + rand(quotes));
-        if (cmd === '.fact' || cmd === '!fact') return msg.reply('🧠 ' + rand(facts));
-        if (cmd === '.dice' || cmd === '!dice') return msg.reply(`🎲 ${Math.floor(Math.random() * 6) + 1}`);
-        if (cmd === '.coinflip' || cmd === '!coinflip') return msg.reply(Math.random() < 0.5 ? 'Heads 🪙' : 'Tails 🪙');
+        if (['.ping', '!ping'].includes(cmd)) return msg.reply('pong 🏓');
+        if (['.hi', '.hello', '!hi', '!hello'].includes(cmd)) return msg.reply('Hello 👋');
+        if (['.joke', '!joke'].includes(cmd)) return msg.reply('😄 ' + rand(jokes));
+        if (['.quote', '!quote'].includes(cmd)) return msg.reply('💬 ' + rand(quotes));
+        if (['.fact', '!fact'].includes(cmd)) return msg.reply('🧠 ' + rand(facts));
+        if (['.dice', '!dice'].includes(cmd)) return msg.reply(`🎲 ${Math.floor(Math.random() * 6) + 1}`);
+        if (['.coinflip', '!coinflip'].includes(cmd)) return msg.reply(Math.random() < 0.5 ? 'Heads 🪙' : 'Tails 🪙');
 
-        if (cmd === '.8ball' || cmd === '!8ball') {
+        if (['.8ball', '!8ball'].includes(cmd)) {
             const answers = ["Yes ✅","No ❌","Maybe 🤔","Absolutely 🔥","Doubtful 🤨","Definitely 💯","Ask later 💭","Signs point to yes 👍"];
             return msg.reply('🎱 ' + rand(answers));
         }
 
-        if (cmd === '.riddle' || cmd === '!riddle') {
+        if (['.riddle', '!riddle'].includes(cmd)) {
             const r = rand(riddles);
             await msg.reply(`🧩 ${r.q}\n\n_Answer in 20s..._`);
             setTimeout(() => msg.reply(`💡 Answer: ${r.a}`), 20000);
             return;
         }
 
-        if (cmd === '.truth' || cmd === '!truth') return msg.reply('💬 ' + rand(truthQuestions));
-        if (cmd === '.dare' || cmd === '!dare') return msg.reply('🔥 ' + rand(dares));
+        if (['.truth', '!truth'].includes(cmd)) return msg.reply('💬 ' + rand(truthQuestions));
+        if (['.dare', '!dare'].includes(cmd)) return msg.reply('🔥 ' + rand(dares));
+        if (['.wouldyourather', '!wouldyourather'].includes(cmd)) return msg.reply('🤔 ' + rand(wouldYouRather));
 
         // ===== UTILITY =====
-        if (cmd === '.time' || cmd === '!time') return msg.reply(`🕐 ${new Date().toLocaleString()}`);
-        if (cmd === '.date' || cmd === '!date') return msg.reply(`📅 ${new Date().toDateString()}`);
+        if (['.time', '!time'].includes(cmd)) return msg.reply(`🕐 ${new Date().toLocaleString()}`);
+        if (['.date', '!date'].includes(cmd)) return msg.reply(`📅 ${new Date().toDateString()}`);
 
-        if (cmd === '.calc' || cmd === '!calc') {
+        if (['.calc', '!calc'].includes(cmd)) {
             const expr = raw.slice(cmd.length).trim();
             if (!expr) return msg.reply('Usage: .calc 2+2');
             if (!/^[0-9+\-*/().\s]+$/.test(expr)) return msg.reply('❌ Only numbers and + - * / ( ) allowed');
@@ -203,13 +224,13 @@ client.on('message', async (msg) => {
             catch { return msg.reply('❌ Invalid expression'); }
         }
 
-        if (cmd === '.random' || cmd === '!random') {
+        if (['.random', '!random'].includes(cmd)) {
             const min = parseInt(args[1]) || 1;
             const max = parseInt(args[2]) || 100;
             return msg.reply(`🎲 ${Math.floor(Math.random() * (max - min + 1)) + min}`);
         }
 
-        if (cmd === '.password' || cmd === '!password') {
+        if (['.password', '!password'].includes(cmd)) {
             const len = Math.min(parseInt(args[1]) || 16, 64);
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
             let p = '';
@@ -217,27 +238,27 @@ client.on('message', async (msg) => {
             return msg.reply(`🔐 ${p}`);
         }
 
-        if (cmd === '.reverse' || cmd === '!reverse') {
+        if (['.reverse', '!reverse'].includes(cmd)) {
             const t = raw.slice(cmd.length).trim();
             return msg.reply(t ? t.split('').reverse().join('') : 'Usage: .reverse hello');
         }
 
-        if (cmd === '.upper' || cmd === '!upper') {
+        if (['.upper', '!upper'].includes(cmd)) {
             const t = raw.slice(cmd.length).trim();
             return msg.reply(t ? t.toUpperCase() : 'Usage: .upper hello');
         }
 
-        if (cmd === '.lower' || cmd === '!lower') {
+        if (['.lower', '!lower'].includes(cmd)) {
             const t = raw.slice(cmd.length).trim();
             return msg.reply(t ? t.toLowerCase() : 'Usage: .lower HELLO');
         }
 
-        if (cmd === '.len' || cmd === '!len') {
+        if (['.len', '!len'].includes(cmd)) {
             const t = raw.slice(cmd.length).trim();
             return msg.reply(`Length: ${t.length}`);
         }
 
-        if (cmd === '.uuid' || cmd === '!uuid') {
+        if (['.uuid', '!uuid'].includes(cmd)) {
             const u = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
                 const r = Math.random() * 16 | 0;
                 return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
@@ -245,35 +266,39 @@ client.on('message', async (msg) => {
             return msg.reply(`🆔 ${u}`);
         }
 
-        if (cmd === '.id' || cmd === '!id') return msg.reply(`Your ID: ${msg.from}`);
+        if (['.id', '!id'].includes(cmd)) return msg.reply(`Your ID: ${msg.from}`);
 
         // ===== GROUP =====
         const chat = await msg.getChat();
 
-        if (cmd === '.groupinfo' || cmd === '!groupinfo') {
+        if (['.chatid', '!chatid'].includes(cmd)) {
+            return msg.reply(`Chat ID: ${chat.id._serialized}`);
+        }
+
+        if (['.groupinfo', '!groupinfo'].includes(cmd)) {
             if (!chat.isGroup) return msg.reply('❌ Groups only.');
             return msg.reply(`📊 *${chat.name}*\nMembers: ${chat.participants.length}\nDesc: ${chat.description || 'None'}`);
         }
 
-        if (cmd === '.tagall' || cmd === '!tagall') {
+        if (['.tagall', '!tagall'].includes(cmd)) {
             if (!chat.isGroup) return msg.reply('❌ Groups only.');
             let t = '📢 *Attention:*\n\n';
             chat.participants.forEach(p => t += `@${p.id.user} `);
             return chat.sendMessage(t, { mentions: chat.participants });
         }
 
-        if (cmd === '.admins' || cmd === '!admins') {
+        if (['.admins', '!admins'].includes(cmd)) {
             if (!chat.isGroup) return msg.reply('❌ Groups only.');
             const admins = chat.participants.filter(p => p.isAdmin).map(p => `@${p.id.user}`).join(' ');
             return msg.reply(`👑 Admins: ${admins || 'None'}`);
         }
 
-        if (cmd === '.members' || cmd === '!members') {
+        if (['.members', '!members'].includes(cmd)) {
             if (!chat.isGroup) return msg.reply('❌ Groups only.');
             return msg.reply(`👥 Total: ${chat.participants.length} members`);
         }
 
-        if (cmd === '.link' || cmd === '!link') {
+        if (['.link', '!link'].includes(cmd)) {
             if (!chat.isGroup) return msg.reply('❌ Groups only.');
             try {
                 const code = await chat.getInviteCode();
@@ -282,7 +307,7 @@ client.on('message', async (msg) => {
         }
 
         // ===== REMINDERS =====
-        if (cmd === '.remind' || cmd === '!remind') {
+        if (['.remind', '!remind'].includes(cmd)) {
             const m = raw.match(/^[.!]remind\s+(\d+)(s|m|h)\s+(.+)$/i);
             if (!m) return msg.reply('Usage: .remind 5m Take a break');
             const unit = m[2].toLowerCase();
@@ -295,7 +320,7 @@ client.on('message', async (msg) => {
         }
 
         // ===== GAMES =====
-        if (cmd === '.guess' || cmd === '!guess') {
+        if (['.guess', '!guess'].includes(cmd)) {
             const n = parseInt(args[1]);
             if (isNaN(n)) return msg.reply('Usage: .guess 42');
             const target = Math.floor(Math.random() * 100) + 1;
@@ -306,7 +331,7 @@ client.on('message', async (msg) => {
             return msg.reply(`❌ It was ${target}`);
         }
 
-        if (cmd === '.quiz' || cmd === '!quiz') {
+        if (['.quiz', '!quiz'].includes(cmd)) {
             const qs = [
                 { q: 'What is 7 × 8?', a: '56' },
                 { q: 'Capital of Japan?', a: 'tokyo' },
