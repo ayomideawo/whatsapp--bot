@@ -3,7 +3,7 @@ const qrcode = require('qrcode-terminal');
 const express = require('express');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 let latestQR = null;
 let isReady = false;
@@ -173,7 +173,6 @@ client.on('message', async (msg) => {
     const args = raw.split(' ');
     const cmd = lower.split(' ')[0];
 
-    // Only respond to commands starting with "." or "!"
     if (!cmd.startsWith('.') && !cmd.startsWith('!')) return;
 
     console.log('📩 Command received:', cmd, 'from', msg.from);
