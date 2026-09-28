@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Install Chromium dependencies
+# Install Chromium and all required system libraries
 RUN apt-get update && apt-get install -y \
     chromium \
     libglib2.0-0 \
@@ -15,17 +15,21 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     libxkbcommon0 \
+    libxshmfence1 \
     fonts-liberation \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use the system Chromium
+# Tell Puppeteer to use the system-installed Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
+
 COPY . .
 
 EXPOSE 3000
