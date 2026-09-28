@@ -3,7 +3,7 @@ const qrcode = require('qrcode-terminal');
 const express = require('express');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+ 'const PORT = process.env.PORT || 3000;
 
 let latestQR = null;
 let isReady = false;
@@ -11,15 +11,14 @@ let isReady = false;
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: 'new',
+        headless: true,
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: [
-            '--no-sandbox',
+           --no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
-            '--no-zygote',
             '--disable-gpu'
         ]
     }
@@ -176,6 +175,8 @@ client.on('message', async (msg) => {
 
     // Only respond to commands starting with "." or "!"
     if (!cmd.startsWith('.') && !cmd.startsWith('!')) return;
+
+    console.log('📩 Command received:', cmd, 'from', msg.from);
 
     try {
         // ===== MENU =====
