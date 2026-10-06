@@ -103,7 +103,7 @@ const DATA = {
 
 const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
-// ===== CATEGORIES FOR STYLED MENU =====
+// ===== CATEGORIES =====
 const CATEGORIES = {
     fun: {
         emoji: '🎮',
@@ -205,7 +205,7 @@ const CATEGORIES = {
     }
 };
 
-// ===== STYLED MENU HELPERS =====
+// ===== MENU HELPERS =====
 function sendMenu(ctx) {
     let total = 0;
     for (const cat of Object.values(CATEGORIES)) total += Object.keys(cat.commands).length;
@@ -215,44 +215,36 @@ function sendMenu(ctx) {
     text += `╚══════════════════════════╝\n\n`;
     text += `⚡ *${total}+ commands* across 4 categories\n`;
     text += `📱 Prefix: \`.\` or \`!\`\n\n`;
-
     text += `*📂 Categories:*\n`;
     for (const [key, cat] of Object.entries(CATEGORIES)) {
         const count = Object.keys(cat.commands).length;
         text += `${cat.emoji} \`.${key}\` — ${cat.title} (${count})\n`;
     }
-
     text += `\n*🔥 Quick start:*\n`;
     text += `• \`.ping\` — test the bot\n`;
     text += `• \`.joke\` — get a laugh\n`;
     text += `• \`.calc 5*8\` — do math\n`;
     text += `• \`.password 20\` — strong password\n\n`;
-
     text += `_Tap \`.fun\`, \`.util\`, \`.sec\` or \`.info\` for details_`;
-
     return ctx.reply(text);
 }
 
 function sendCategory(ctx, catKey) {
     const cat = CATEGORIES[catKey];
     if (!cat) return ctx.reply('❌ Unknown category. Try: fun, util, sec, info');
-
     const count = Object.keys(cat.commands).length;
     let text = `╔══════════════════════════╗\n`;
     text += `║  ${cat.emoji}  *${cat.title}* (${count})\n`;
     text += `╚══════════════════════════╝\n\n`;
-
     for (const [cmd, desc] of Object.entries(cat.commands)) {
         text += `▸ \`.${cmd}\`\n   _${desc}_\n`;
     }
-
     text += `\n_Balance: type \`.menu\` for all categories_`;
     return ctx.reply(text);
 }
 
 // ===== COMMANDS =====
 const COMMANDS = {
-    // --- Menu / categories ---
     menu: ctx => sendMenu(ctx),
     help: ctx => sendMenu(ctx),
     fun: ctx => sendCategory(ctx, 'fun'),
@@ -260,7 +252,6 @@ const COMMANDS = {
     sec: ctx => sendCategory(ctx, 'sec'),
     info: ctx => sendCategory(ctx, 'info'),
 
-    // --- Fun ---
     joke: ctx => ctx.reply('😄 ' + rand(DATA.jokes)),
     quote: ctx => ctx.reply('💬 ' + rand(DATA.quotes)),
     fact: ctx => ctx.reply('🧠 ' + rand(DATA.facts)),
@@ -310,7 +301,6 @@ const COMMANDS = {
         setTimeout(() => ctx.reply(`💡 ${r.a}`), 20000);
     },
 
-    // --- Utility ---
     time: ctx => ctx.reply(`🕐 ${new Date().toLocaleString()}`),
     date: ctx => ctx.reply(`📅 ${new Date().toDateString()}`),
     week: ctx => ctx.reply(`📅 ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]}`),
@@ -463,7 +453,6 @@ const COMMANDS = {
     goal: (ctx, arg) => arg ? ctx.reply(`🎯 ${arg}`) : ctx.reply('Usage: .goal finish project'),
     mygoal: ctx => ctx.reply('Use .goal'),
 
-    // --- Security ---
     strength: (ctx, arg) => {
         if (!arg) return ctx.reply('Usage: .strength MyPass123');
         const score = [arg.length >= 8, arg.length >= 12, /[a-z]/.test(arg), /[A-Z]/.test(arg), /[0-9]/.test(arg), /[^a-zA-Z0-9]/.test(arg)].filter(Boolean).length;
@@ -500,7 +489,6 @@ const COMMANDS = {
         ctx.reply(cmds[c] ? `🐧 ${c}: ${cmds[c]}` : 'Try: ls, cd, pwd, chmod, grep, ssh, tar, curl');
     },
 
-    // --- Info ---
     ping: async ctx => {
         const t = Date.now();
         await ctx.reply('🏓 Pong!');
@@ -508,7 +496,7 @@ const COMMANDS = {
     }
 };
 
-// ===== MESSAGE HANDLER =====
+// ===== WA EVENTS =====
 client.on('qr', qr => {
     latestQR = qr;
     console.log('📱 QR code ready');
@@ -529,7 +517,6 @@ client.on('disconnected', reason => {
 
 client.on('message', async msg => {
     if (msg.fromMe) return;
-
     const text = msg.body.trim();
     if (!text) return;
 
@@ -537,7 +524,6 @@ client.on('message', async msg => {
     const args = text.split(' ');
     const cmd = lower.split(' ')[0];
 
-    // Password gate
     if (botPassword && !authedChats.has(msg.from)) {
         if (lower === botPassword.toLowerCase()) {
             authedChats.add(msg.from);
@@ -563,29 +549,232 @@ client.on('message', async msg => {
     }
 });
 
-// ===== WEB SERVER =====
+// ===== STYLED QR PAGE =====
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>WhatsApp Bot</title>
+            <title>XITEXE WhatsApp Bot</title>
             <meta http-equiv="refresh" content="3">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
-                body { background:#0a0a0a; color:#00ff00; font-family:monospace; text-align:center; padding:20px; }
-                h1 { color:#ff00ff; }
-                img { border:3px solid #00ff00; border-radius:10px; background:#fff; padding:10px; margin:20px 0; }
-                .ok { color:#00ff00; font-size:2rem; }
-                .wait { color:#ffaa00; }
+                * { margin:0; padding:0; box-sizing:border-box; }
+                body {
+                    background: #0a0a0a;
+                    color: #e0e0e0;
+                    font-family: 'Segoe UI', system-ui, sans-serif;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    background-image:
+                        radial-gradient(circle at 20% 50%, rgba(0, 200, 83, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 50%, rgba(255, 0, 255, 0.05) 0%, transparent 50%);
+                }
+                .card {
+                    background: #121212;
+                    border: 1px solid #222;
+                    border-radius: 20px;
+                    padding: 40px 30px;
+                    max-width: 480px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 0; right: 0;
+                    height: 3px;
+                    background: linear-gradient(90deg, #00c853, #ff00ff, #00c853);
+                    background-size: 200% 100%;
+                    animation: shimmer 3s linear infinite;
+                }
+                @keyframes shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+                .logo { text-align: center; font-size: 3rem; margin-bottom: 10px; }
+                h1 {
+                    text-align: center;
+                    font-size: 1.4rem;
+                    color: #00c853;
+                    margin-bottom: 6px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                }
+                .subtitle {
+                    text-align: center;
+                    color: #666;
+                    font-size: 0.8rem;
+                    margin-bottom: 30px;
+                    letter-spacing: 0.5px;
+                }
+                .status { text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+                .status.ready { background: rgba(0, 200, 83, 0.08); border: 1px solid rgba(0, 200, 83, 0.3); }
+                .status.waiting { background: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); }
+                .status-icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+                .status-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+                .status.ready .status-title { color: #00c853; }
+                .status.waiting .status-title { color: #ffaa00; }
+                .status-text { color: #888; font-size: 0.85rem; }
+                .qr-wrapper {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin: 0 auto 20px;
+                    width: fit-content;
+                    box-shadow: 0 0 40px rgba(0, 200, 83, 0.15);
+                }
+                .qr-wrapper img { display: block; width: 280px; height: 280px; }
+                .instructions {
+                    background: #0a0a0a;
+                    border: 1px solid #1a1a1a;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    margin-bottom: 20px;
+                }
+                .instructions-title {
+                    color: #00c853;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 12px;
+                }
+                .step {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    margin-bottom: 10px;
+                    font-size: 0.85rem;
+                    color: #bbb;
+                }
+                .step:last-child { margin-bottom: 0; }
+                .step-num {
+                    background: #00c853;
+                    color: #000;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+                .commands-preview {
+                    background: #0a0a0a;
+                    border: 1px solid #1a1a1a;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                }
+                .commands-title {
+                    color: #00c853;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 12px;
+                }
+                .cmd-tag {
+                    display: inline-block;
+                    background: rgba(0, 200, 83, 0.1);
+                    color: #00c853;
+                    border: 1px solid rgba(0, 200, 83, 0.3);
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    font-family: 'Courier New', monospace;
+                    margin: 0 6px 6px 0;
+                }
+                .loader { display: flex; justify-content: center; gap: 6px; margin: 20px 0; }
+                .loader span {
+                    width: 10px;
+                    height: 10px;
+                    background: #00c853;
+                    border-radius: 50%;
+                    animation: bounce 1.2s infinite;
+                }
+                .loader span:nth-child(2) { animation-delay: 0.15s; }
+                .loader span:nth-child(3) { animation-delay: 0.3s; }
+                @keyframes bounce {
+                    0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+                    30% { transform: translateY(-10px); opacity: 1; }
+                }
+                .footer {
+                    text-align: center;
+                    color: #444;
+                    font-size: 0.7rem;
+                    margin-top: 20px;
+                    letter-spacing: 0.5px;
+                }
+                .footer a { color: #00c853; text-decoration: none; }
             </style>
         </head>
         <body>
-            ${isReady ? '<h1 class="ok">✅ Bot is running!</h1><p>Send .menu on WhatsApp</p>' : latestQR ? `
-                <h1>📱 Scan this QR code</h1>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(latestQR)}" />
-                <p>WhatsApp → Linked Devices → Link a Device</p>
-            ` : '<h1 class="wait">⏳ Starting...</h1>'}
+            <div class="card">
+                <div class="logo">🤖</div>
+                <h1>XITEXE BOT</h1>
+                <div class="subtitle">WHATSAPP AUTOMATION</div>
+
+                ${isReady ? `
+                    <div class="status ready">
+                        <span class="status-icon">✅</span>
+                        <div class="status-title">Bot is running</div>
+                        <div class="status-text">Linked to WhatsApp — ready to use</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="instructions-title">💬 Try it now</div>
+                        <div class="step"><span class="step-num">1</span><span>Open any WhatsApp chat</span></div>
+                        <div class="step"><span class="step-num">2</span><span>Send <strong style="color:#00c853;">.menu</strong> to see all commands</span></div>
+                        <div class="step"><span class="step-num">3</span><span>Send <strong style="color:#00c853;">.ping</strong> to check the bot is alive</span></div>
+                    </div>
+                    <div class="commands-preview">
+                        <div class="commands-title">🎯 Popular Commands</div>
+                        <span class="cmd-tag">.menu</span>
+                        <span class="cmd-tag">.joke</span>
+                        <span class="cmd-tag">.ping</span>
+                        <span class="cmd-tag">.calc</span>
+                        <span class="cmd-tag">.password</span>
+                        <span class="cmd-tag">.fun</span>
+                        <span class="cmd-tag">.util</span>
+                        <span class="cmd-tag">.sec</span>
+                    </div>
+                ` : latestQR ? `
+                    <div class="status waiting">
+                        <span class="status-icon">📱</span>
+                        <div class="status-title">Scan to link</div>
+                        <div class="status-text">Open WhatsApp and scan the QR code below</div>
+                    </div>
+                    <div class="qr-wrapper">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(latestQR)}" alt="QR Code" />
+                    </div>
+                    <div class="instructions">
+                        <div class="instructions-title">📋 How to scan</div>
+                        <div class="step"><span class="step-num">1</span><span>Open <strong>WhatsApp</strong> on your phone</span></div>
+                        <div class="step"><span class="step-num">2</span><span>Tap <strong>Settings</strong> → <strong>Linked Devices</strong></span></div>
+                        <div class="step"><span class="step-num">3</span><span>Tap <strong>Link a Device</strong></span></div>
+                        <div class="step"><span class="step-num">4</span><span>Point your phone at this QR code</span></div>
+                    </div>
+                    <div class="footer">⏳ Page refreshes every 3 seconds</div>
+                ` : `
+                    <div class="status waiting">
+                        <span class="status-icon">⏳</span>
+                        <div class="status-title">Starting up...</div>
+                        <div class="status-text">Chrome is launching — this takes 30-60 seconds</div>
+                    </div>
+                    <div class="loader"><span></span><span></span><span></span></div>
+                    <div class="footer">Page auto-refreshes every 3 seconds</div>
+                `}
+
+                <div class="footer">Powered by <a href="#">@Xitexes</a></div>
+            </div>
         </body>
         </html>
     `);
