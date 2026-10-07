@@ -1,285 +1,125 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const express = require('express');
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 const PORT = process.env.PORT || 10000;
 
 let latestQR = null;
+let latestPairingCode = null;
 let isReady = false;
-let botPassword = process.env.BOT_PASSWORD || null;
-const authedChats = new Set();
+let usePairingCode = false;
+let client = null;
 
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: 'new',
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-software-rasterizer',
-            '--disable-extensions',
-            '--disable-background-networking',
-            '--disable-sync',
-            '--disable-translate',
-            '--hide-scrollbars',
-            '--mute-audio',
-            '--no-first-run',
-            '--single-process'
-        ]
+// ===== CREATE CLIENT =====
+function createClient(usePairing, phone) {
+    if (client) {
+        try { client.destroy(); } catch (e) {}
     }
-});
 
-// ===== SMALL DATA SETS =====
-const jokes = [
-    "Why do programmers prefer dark mode? Light attracts bugs 🐛",
-    "Why did the dev go broke? He used up all his cache 💸",
-    "How many programmers to change a bulb? None, hardware 💡",
-    "A SQL query walks into a bar: 'Can I join you?' 🍻",
-    "Recursion: see Recursion 🔁"
-];
-
-const facts = [
-    "Octopuses have three hearts 🐙",
-    "Honey never spoils 🍯",
-    "A day on Venus is longer than a year 🪐",
-    "Bananas are berries, strawberries aren't 🍌"
-];
-
-const quotes = [
-    "The best way to predict the future is to invent it. — Alan Kay",
-    "Simplicity is the soul of efficiency. — Austin Freeman",
-    "Code is like humor. When you have to explain it, it's bad. — Cory House"
-];
-
-const sectips = [
-    "*Tip:* Use a password manager.",
-    "*Tip:* Enable 2FA on every account.",
-    "*Tip:* Never reuse passwords."
-];
-
-const rand = arr => arr[Math.floor(Math.random() * arr.length)];
-
-// ===== STYLED MENU =====
-const MENU = `╔══════════════════════════╗
-║   🤖  *XITEXE BOT*   🤖   ║
-╚══════════════════════════╝
-
-⚡ *30 commands* — 4 categories
-📱 Prefix: \`. \` or \`! \`
-
-*📂 Categories:*
-🎮 \`.fun\` — Fun (10)
-🛠️ \`.util\` — Utility (10)
-🛡️ \`.sec\` — Security (5)
-ℹ️ \`.info\` — Info (3)
-
-*🔥 Quick start:*
-• \`.ping\` — test the bot
-• \`.joke\` — get a laugh
-• \`.calc 5*8\` — do math
-• \`.password 20\` — strong password
-
-_Tap \`.fun\`, \`.util\`, \`.sec\` or \`.info\` for details_`;
-
-const FUN_MENU = `╔══════════════════════════╗
-║  🎮  *FUN* (10)
-╚══════════════════════════╝
-
-▸ \`.joke\` — Random joke
-▸ \`.fact\` — Random fact
-▸ \`.quote\` — Random quote
-▸ \`.dice\` — Roll a dice
-▸ \`.coinflip\` — Heads or tails
-▸ \`.8ball\` — Magic 8-ball
-▸ \`.roast\` — Roast someone
-▸ \`.compliment\` — Give a compliment
-▸ \`.vibe\` — Vibe check
-▸ \`.rate <thing>\` — Rate something`;
-
-const UTIL_MENU = `╔══════════════════════════╗
-║  🛠️  *UTILITY* (10)
-╚══════════════════════════╝
-
-▸ \`.time\` — Current time
-▸ \`.date\` — Today's date
-▸ \`.calc <expr>\` — Calculator
-▸ \`.random <min> <max>\` — Random number
-▸ \`.password <len>\` — Generate password
-▸ \`.reverse <text>\` — Reverse text
-▸ \`.upper <text>\` — Uppercase
-▸ \`.lower <text>\` — Lowercase
-▸ \`.len <text>\` — Character count
-▸ \`.count <text>\` — Word count`;
-
-const SEC_MENU = `╔══════════════════════════╗
-║  🛡️  *SECURITY* (5)
-╚══════════════════════════╝
-
-▸ \`.strength <pwd>\` — Password strength
-▸ \`.scamcheck <text>\` — Scam analysis
-▸ \`.linkcheck <url>\` — Link safety
-▸ \`.sectips\` — Security tip
-▸ \`.randpin <len>\` — Random PIN`;
-
-const INFO_MENU = `╔══════════════════════════╗
-║  ℹ️  *INFO* (3)
-╚══════════════════════════╝
-
-▸ \`.ping\` — Check bot latency
-▸ \`.menu\` — Show main menu
-▸ \`.help\` — Same as menu`;
-
-// ===== COMMANDS =====
-const COMMANDS = {
-    // Menus
-    menu: ctx => ctx.reply(MENU),
-    help: ctx => ctx.reply(MENU),
-    fun: ctx => ctx.reply(FUN_MENU),
-    util: ctx => ctx.reply(UTIL_MENU),
-    sec: ctx => ctx.reply(SEC_MENU),
-    info: ctx => ctx.reply(INFO_MENU),
-
-    // Fun
-    joke: ctx => ctx.reply('😄 ' + rand(jokes)),
-    fact: ctx => ctx.reply('🧠 ' + rand(facts)),
-    quote: ctx => ctx.reply('💬 ' + rand(quotes)),
-    dice: ctx => ctx.reply(`🎲 ${Math.floor(Math.random() * 6) + 1}`),
-    coinflip: ctx => ctx.reply(Math.random() < 0.5 ? 'Heads 🪙' : 'Tails 🪙'),
-    '8ball': ctx => ctx.reply('🎱 ' + rand(['Yes ✅','No ❌','Maybe 🤔','Definitely 💯'])),
-    roast: ctx => ctx.reply('🔥 ' + rand([
-        "You're the reason they put instructions on shampoo bottles.",
-        "Your code is like your face — buggy.",
-        "You're the human equivalent of a software update at 3 AM."
-    ])),
-    compliment: ctx => ctx.reply('💚 ' + rand([
-        "You're doing great.",
-        "Your existence makes the world better.",
-        "You're smarter than you think."
-    ])),
-    vibe: ctx => ctx.reply('✨ ' + rand([
-        "🔥 Immaculate vibes.",
-        "✨ Chill vibes.",
-        "⚡ Chaotic energy."
-    ])),
-    rate: (ctx, arg) => ctx.reply(`⭐ ${arg || 'it'}: ${Math.floor(Math.random() * 10) + 1}/10`),
-
-    // Utility
-    time: ctx => ctx.reply(`🕐 ${new Date().toLocaleString()}`),
-    date: ctx => ctx.reply(`📅 ${new Date().toDateString()}`),
-    calc: (ctx, arg) => {
-        if (!arg) return ctx.reply('Usage: .calc 2+2');
-        if (!/^[0-9+\-*/().\s]+$/.test(arg)) return ctx.reply('❌ Only numbers and + - * / ( )');
-        try { ctx.reply(`🧮 ${arg} = ${eval(arg)}`); }
-        catch { ctx.reply('❌ Invalid expression'); }
-    },
-    random: (ctx, arg) => {
-        const a = arg.split(' ');
-        const min = parseInt(a[0]) || 1;
-        const max = parseInt(a[1]) || 100;
-        ctx.reply(`🎲 ${Math.floor(Math.random() * (max - min + 1)) + min}`);
-    },
-    password: (ctx, arg) => {
-        const len = Math.min(parseInt(arg) || 16, 64);
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-        let p = '';
-        for (let i = 0; i < len; i++) p += chars[Math.floor(Math.random() * chars.length)];
-        ctx.reply(`🔐 ${p}`);
-    },
-    reverse: (ctx, arg) => ctx.reply(arg ? arg.split('').reverse().join('') : 'Usage: .reverse hello'),
-    upper: (ctx, arg) => ctx.reply(arg ? arg.toUpperCase() : 'Usage: .upper hello'),
-    lower: (ctx, arg) => ctx.reply(arg ? arg.toLowerCase() : 'Usage: .lower HELLO'),
-    len: (ctx, arg) => ctx.reply(`Length: ${arg.length}`),
-    count: (ctx, arg) => ctx.reply(`📊 Chars: ${arg.length} | Words: ${arg.split(/\s+/).filter(Boolean).length}`),
-
-    // Security
-    strength: (ctx, arg) => {
-        if (!arg) return ctx.reply('Usage: .strength MyPass123');
-        const score = [arg.length >= 8, arg.length >= 12, /[a-z]/.test(arg), /[A-Z]/.test(arg), /[0-9]/.test(arg), /[^a-zA-Z0-9]/.test(arg)].filter(Boolean).length;
-        ctx.reply(`🔐 Strength: ${score >= 5 ? 'Very Strong 🟢' : score >= 4 ? 'Strong 🟡' : score >= 3 ? 'Medium 🟠' : 'Weak 🔴'}`);
-    },
-    scamcheck: (ctx, arg) => {
-        const t = arg.toLowerCase();
-        const flags = [];
-        if (/urgent|immediately/.test(t)) flags.push('Urgency');
-        if (/click here/.test(t)) flags.push('Click bait');
-        if (/otp|password|pin/.test(t)) flags.push('Sensitive info');
-        ctx.reply(`🔍 Red flags: ${flags.length ? flags.join(', ') : '✅ None'}`);
-    },
-    linkcheck: (ctx, arg) => {
-        const u = arg.toLowerCase();
-        const flags = [];
-        if (/bit\.ly|tinyurl/.test(u)) flags.push('Shortener');
-        if (!/^https:\/\//.test(u)) flags.push('Not HTTPS');
-        ctx.reply(`🔗 ${flags.length ? '⚠️ ' + flags.join(', ') : '✅ No obvious risks'}`);
-    },
-    sectips: ctx => ctx.reply('🔒 ' + rand(sectips)),
-    randpin: (ctx, arg) => {
-        const len = Math.min(parseInt(arg) || 6, 12);
-        let pin = '';
-        for (let i = 0; i < len; i++) pin += Math.floor(Math.random() * 10);
-        ctx.reply(`🔢 Random PIN: ${pin}`);
-    },
-
-    // Info
-    ping: async ctx => {
-        const t = Date.now();
-        await ctx.reply('🏓 Pong!');
-        ctx.reply(`⚡ ${Date.now() - t}ms`);
-    }
-};
-
-// ===== EVENTS =====
-client.on('qr', qr => {
-    latestQR = qr;
-    console.log('📱 QR ready');
-    qrcode.generate(qr, { small: true });
-});
-
-client.on('ready', () => {
-    isReady = true;
+    usePairingCode = usePairing;
+    isReady = false;
     latestQR = null;
-    console.log('✅ Ready');
-});
+    latestPairingCode = null;
 
-client.on('auth_failure', m => console.error('❌ Auth:', m));
-client.on('disconnected', r => { console.log('⚠️ Disconnected:', r); isReady = false; });
-
-client.on('message', async msg => {
-    if (msg.fromMe) return;
-    const text = msg.body.trim();
-    if (!text) return;
-
-    const lower = text.toLowerCase();
-    const args = text.split(' ');
-    const cmd = lower.split(' ')[0];
-
-    if (botPassword && !authedChats.has(msg.from)) {
-        if (lower === botPassword.toLowerCase()) {
-            authedChats.add(msg.from);
-            return msg.reply('✅ Password correct. Type .menu');
+    const options = {
+        authStrategy: new LocalAuth(),
+        puppeteer: {
+            headless: 'new',
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-first-run',
+                '--single-process'
+            ]
         }
-        return msg.reply('🔒 Password protected. Send the password.');
+    };
+
+    if (usePairing && phone) {
+        options.pairWithPhoneNumber = {
+            phoneNumber: phone.replace(/\D/g, ''),
+            showNotification: true,
+            intervalMs: 180000
+        };
     }
 
-    if (!cmd.startsWith('.') && !cmd.startsWith('!')) return;
-    const command = cmd.slice(1);
-    const arg = args.slice(1).join(' ');
+    client = new Client(options);
 
-    if (COMMANDS[command]) {
-        try { await COMMANDS[command](msg, arg); }
-        catch (e) { console.error(e.message); msg.reply('❌ Error'); }
-    } else {
-        msg.reply(`❌ Unknown: ${cmd}\nType .menu`);
-    }
-});
+    client.on('qr', qr => {
+        if (!usePairingCode) {
+            latestQR = qr;
+            console.log('📱 QR ready');
+        }
+    });
 
-// ===== STYLED QR PAGE =====
+    client.on('code', code => {
+        latestPairingCode = code;
+        console.log('🔐 Pairing code:', code);
+    });
+
+    client.on('ready', () => {
+        isReady = true;
+        latestQR = null;
+        latestPairingCode = null;
+        console.log('✅ Ready');
+    });
+
+    client.on('auth_failure', m => console.error('❌ Auth:', m));
+    client.on('disconnected', r => {
+        console.log('⚠️ Disconnected:', r);
+        isReady = false;
+    });
+
+    client.on('message', async msg => {
+        if (msg.fromMe) return;
+        const text = msg.body.trim().toLowerCase();
+        if (!text.startsWith('.') && !text.startsWith('!')) return;
+
+        const cmd = text.slice(1).split(' ')[0];
+
+        switch (cmd) {
+            case 'ping':
+                return msg.reply('🏓 Pong!');
+            case 'hi':
+                return msg.reply('👋 Hello!');
+            case 'time':
+                return msg.reply(`🕐 ${new Date().toLocaleString()}`);
+            case 'joke':
+                return msg.reply('😄 Why do programmers prefer dark mode? Light attracts bugs 🐛');
+            case 'menu':
+                return msg.reply(
+                    `╔══════════════════════╗\n` +
+                    `║   🤖  *XITEXE BOT*   ║\n` +
+                    `╚══════════════════════╝\n\n` +
+                    `▸ \`.ping\` — Test the bot\n` +
+                    `▸ \`.hi\` — Say hello\n` +
+                    `▸ \`.time\` — Current time\n` +
+                    `▸ \`.joke\` — Random joke\n` +
+                    `▸ \`.menu\` — This menu`
+                );
+            default:
+                return msg.reply(`❌ Unknown: ${cmd}\nType .menu`);
+        }
+    });
+
+    client.initialize();
+}
+
+// ===== STYLED PAGE =====
 app.get('/', (req, res) => {
-    const html = `<!DOCTYPE html>
+    res.send(`<!DOCTYPE html>
 <html>
 <head>
     <title>XITEXE WhatsApp Bot</title>
@@ -313,6 +153,14 @@ app.get('/', (req, res) => {
         .logo { text-align:center; font-size:3rem; margin-bottom:10px; }
         h1 { text-align:center; font-size:1.4rem; color:#00c853; margin-bottom:6px; font-weight:700; letter-spacing:1px; }
         .subtitle { text-align:center; color:#666; font-size:0.8rem; margin-bottom:25px; letter-spacing:0.5px; }
+        .tabs { display:flex; gap:8px; margin-bottom:25px; background:#0a0a0a; padding:6px; border-radius:12px; border:1px solid #1a1a1a; }
+        .tab {
+            flex:1; padding:12px; text-align:center; background:transparent;
+            color:#888; border:none; border-radius:8px; cursor:pointer;
+            font-size:0.85rem; font-weight:600; transition:0.2s; text-decoration:none; display:block;
+        }
+        .tab:hover { color:#ccc; }
+        .tab.active { background:#00c853; color:#000; }
         .status { text-align:center; padding:20px; border-radius:12px; margin-bottom:20px; }
         .status.ready { background:rgba(0,200,83,0.08); border:1px solid rgba(0,200,83,0.3); }
         .status.waiting { background:rgba(255,170,0,0.08); border:1px solid rgba(255,170,0,0.3); }
@@ -327,6 +175,15 @@ app.get('/', (req, res) => {
             box-shadow:0 0 40px rgba(0,200,83,0.15);
         }
         .qr-wrapper img { display:block; width:280px; height:280px; }
+        .code-display {
+            background:#0a0a0a; border:2px dashed #00c853; border-radius:16px;
+            padding:30px; margin-bottom:20px; text-align:center;
+        }
+        .code-value {
+            font-family:'Courier New',monospace; font-size:2.5rem;
+            font-weight:700; color:#00c853; letter-spacing:8px; margin-bottom:10px;
+        }
+        .code-hint { color:#888; font-size:0.8rem; }
         .instructions { background:#0a0a0a; border:1px solid #1a1a1a; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
         .instructions-title { color:#00c853; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
         .step { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; font-size:0.85rem; color:#bbb; }
@@ -351,18 +208,32 @@ app.get('/', (req, res) => {
             0%, 60%, 100% { transform:translateY(0); opacity:0.3; }
             30% { transform:translateY(-10px); opacity:1; }
         }
+        .phone-input {
+            width:100%; padding:14px; background:#0a0a0a; border:1px solid #333;
+            border-radius:8px; color:#fff; font-size:1rem; margin-bottom:10px;
+            font-family:'Courier New',monospace; letter-spacing:1px;
+        }
+        .phone-input:focus { outline:none; border-color:#00c853; }
+        .submit-btn {
+            width:100%; padding:14px; background:#00c853; color:#000;
+            border:none; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;
+        }
+        .submit-btn:hover { background:#00e676; }
         .footer { text-align:center; color:#444; font-size:0.7rem; margin-top:20px; letter-spacing:0.5px; }
         .footer a { color:#00c853; text-decoration:none; }
     </style>
     <script>
-        let counter = 10;
-        let lastState = { ready: null, qr: null };
+        let lastState = { ready: null, qr: null, code: null };
+
+        function getMode() {
+            return new URLSearchParams(window.location.search).get('mode') || 'qr';
+        }
 
         async function poll() {
             try {
                 const r = await fetch('/api/status');
                 const d = await r.json();
-                if (d.ready !== lastState.ready || d.qr !== lastState.qr) {
+                if (d.ready !== lastState.ready || d.qr !== lastState.qr || d.code !== lastState.code) {
                     lastState = d;
                     render(d);
                 }
@@ -371,25 +242,60 @@ app.get('/', (req, res) => {
 
         function render(d) {
             const box = document.getElementById('content');
+            const mode = getMode();
+
             if (d.ready) {
                 box.innerHTML = '<div class="status ready"><span class="status-icon">✅</span><div class="status-title">Bot is running</div><div class="status-text">Linked to WhatsApp</div></div>' +
                     '<div class="instructions"><div class="instructions-title">💬 Try it now</div>' +
                     '<div class="step"><span class="step-num">1</span><span>Open any WhatsApp chat</span></div>' +
                     '<div class="step"><span class="step-num">2</span><span>Send <strong style="color:#00c853;">.menu</strong></span></div>' +
                     '<div class="step"><span class="step-num">3</span><span>Send <strong style="color:#00c853;">.ping</strong></span></div></div>' +
-                    '<div class="commands-preview"><div class="commands-title">🎯 Popular</div>' +
-                    '<span class="cmd-tag">.menu</span><span class="cmd-tag">.joke</span>' +
-                    '<span class="cmd-tag">.ping</span><span class="cmd-tag">.calc</span>' +
-                    '<span class="cmd-tag">.password</span><span class="cmd-tag">.fun</span></div>';
-            } else if (d.qr) {
-                box.innerHTML = '<div class="qr-wrapper"><img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(d.qr) + '" /></div>' +
+                    '<div class="commands-preview"><div class="commands-title">🎯 Commands</div>' +
+                    '<span class="cmd-tag">.menu</span><span class="cmd-tag">.ping</span>' +
+                    '<span class="cmd-tag">.hi</span><span class="cmd-tag">.time</span>' +
+                    '<span class="cmd-tag">.joke</span></div>';
+                return;
+            }
+
+            const tabs = '<div class="tabs">' +
+                '<a href="/?mode=qr" class="tab ' + (mode === 'qr' ? 'active' : '') + '">📱 QR Code</a>' +
+                '<a href="/?mode=pair" class="tab ' + (mode === 'pair' ? 'active' : '') + '">🔐 Pairing Code</a>' +
+                '</div>';
+
+            if (mode === 'pair') {
+                if (d.code) {
+                    const formatted = d.code.match(/.{1,4}/g).join(' ');
+                    box.innerHTML = tabs +
+                        '<div class="status waiting"><span class="status-icon">🔐</span><div class="status-title">Enter this code in WhatsApp</div><div class="status-text">Settings → Linked Devices → Link with phone number</div></div>' +
+                        '<div class="code-display"><div class="code-value">' + formatted + '</div><div class="code-hint">Expires in a few minutes</div></div>' +
+                        '<div class="instructions"><div class="instructions-title">📋 How to use</div>' +
+                        '<div class="step"><span class="step-num">1</span><span>Open <strong>WhatsApp</strong></span></div>' +
+                        '<div class="step"><span class="step-num">2</span><span>Settings → <strong>Linked Devices</strong></span></div>' +
+                        '<div class="step"><span class="step-num">3</span><span>Tap <strong>Link with phone number</strong></span></div>' +
+                        '<div class="step"><span class="step-num">4</span><span>Enter the code above</span></div></div>';
+                } else {
+                    box.innerHTML = tabs +
+                        '<div class="status waiting"><span class="status-icon">📱</span><div class="status-title">Enter your phone number</div><div class="status-text">Include country code — e.g. 2348012345678</div></div>' +
+                        '<form method="POST" action="/start-pair">' +
+                        '<input type="tel" name="phone" class="phone-input" placeholder="2348012345678" required />' +
+                        '<button type="submit" class="submit-btn">🔐 Generate Pairing Code</button>' +
+                        '</form>';
+                }
+                return;
+            }
+
+            // QR mode
+            if (d.qr) {
+                box.innerHTML = tabs +
+                    '<div class="qr-wrapper"><img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(d.qr) + '" /></div>' +
                     '<div class="instructions"><div class="instructions-title">📋 How to scan</div>' +
                     '<div class="step"><span class="step-num">1</span><span>Open <strong>WhatsApp</strong></span></div>' +
                     '<div class="step"><span class="step-num">2</span><span>Settings → <strong>Linked Devices</strong></span></div>' +
                     '<div class="step"><span class="step-num">3</span><span>Tap <strong>Link a Device</strong></span></div>' +
                     '<div class="step"><span class="step-num">4</span><span>Point at the QR code</span></div></div>';
             } else {
-                box.innerHTML = '<div class="status waiting"><span class="status-icon">⚡</span><div class="status-title">Booting up</div><div class="status-text">Chrome is launching</div></div>' +
+                box.innerHTML = tabs +
+                    '<div class="status waiting"><span class="status-icon">⚡</span><div class="status-title">Booting up</div><div class="status-text">Chrome is launching</div></div>' +
                     '<div class="loader"><span></span><span></span><span></span></div>';
             }
         }
@@ -407,16 +313,28 @@ app.get('/', (req, res) => {
         <div class="footer">Powered by <a href="#">@Xitexes</a></div>
     </div>
 </body>
-</html>`;
-    res.send(html);
+</html>`);
 });
 
 app.get('/api/status', (req, res) => {
-    res.json({ ready: isReady, qr: latestQR });
+    res.json({
+        ready: isReady,
+        qr: latestQR,
+        code: latestPairingCode
+    });
+});
+
+// Start pairing mode
+app.post('/start-pair', (req, res) => {
+    const phone = (req.body.phone || '').replace(/\D/g, '');
+    if (!phone || phone.length < 10) return res.redirect('/?mode=pair');
+    createClient(true, phone);
+    res.redirect('/?mode=pair');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌐 Web on ${PORT}`);
 });
 
-client.initialize();
+// Start in QR mode
+createClient(false);
